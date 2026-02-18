@@ -15,7 +15,7 @@ echo "📦 部署 AiDocPlus-DocTemplates → ${TARGET_DIR}"
 GENERATED_DIR="${TARGET_DIR}/packages/shared-types/src/generated"
 mkdir -p "$GENERATED_DIR"
 
-for f in ppt-themes.generated.ts doc-template-categories.generated.ts; do
+for f in ppt-themes.generated.ts doc-template-categories.generated.ts doc-templates.generated.ts; do
   if [ -f "${DIST_DIR}/${f}" ]; then
     cp "${DIST_DIR}/${f}" "${GENERATED_DIR}/"
     echo "   ✅ ${f} → generated/"
@@ -36,8 +36,8 @@ find "$DATA_DIR" -name "manifest.json" -not -path "*/_meta.json" | while read -r
   target_dir="${BUNDLED_DIR}/${rel_path}"
   mkdir -p "$target_dir"
   cp "${tmpl_dir}/manifest.json" "$target_dir/"
-  # 复制可选的 content.md
-  [ -f "${tmpl_dir}/content.md" ] && cp "${tmpl_dir}/content.md" "$target_dir/" || true
+  # 复制可选的 content.json
+  [ -f "${tmpl_dir}/content.json" ] && cp "${tmpl_dir}/content.json" "$target_dir/" || true
 done
 
 TOTAL=$(find "$DATA_DIR" -name "manifest.json" -not -path "*/_meta.json" | wc -l | tr -d ' ')

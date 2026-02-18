@@ -19,6 +19,67 @@ def ts_string(s: str) -> str:
     return json.dumps(s, ensure_ascii=False)
 
 
+def find_doc_templates(data_dir: str):
+    """扫描所有非 ppt-theme 分类下的文档模板"""
+    templates = []
+    for cat_name in os.listdir(data_dir):
+        if cat_name.startswith('_') or cat_name == 'ppt-theme':
+            continue
+        cat_dir = os.path.join(data_dir, cat_name)
+        if not os.path.isdir(cat_dir):
+            continue
+        for tmpl_name in os.listdir(cat_dir):
+            tmpl_dir = os.path.join(cat_dir, tmpl_name)
+            manifest_path = os.path.join(tmpl_dir, 'manifest.json')
+            if not os.path.isfile(manifest_path):
+                continue
+            with open(manifest_path, 'r', encoding='utf-8') as f:
+                manifest = json.load(f)
+            templates.append(manifest)
+    templates.sort(key=lambda t: (t.get('majorCategory', ''), t.get('order', 0)))
+    return templates
+
+
+def generate_doc_templates_ts(templates):
+    entries = []
+    for t in templates:
+        roles = t.get('roles', [])
+        roles_ts = '[' + ', '.join(ts_string(r) for r in roles) + ']'
+        tags = t.get('tags', [])
+        tags_ts = '[' + ', '.join(ts_string(tag) for tag in tags) + ']'
+        entries.append(
+            f'  {{ id: {ts_string(t["id"])}, name: {ts_string(t["name"])}, '
+            f'description: {ts_string(t.get("description", ""))}, '
+            f'icon: {ts_string(t.get("icon", ""))}, '
+            f'majorCategory: {ts_string(t.get("majorCategory", ""))}, '
+            f'subCategory: {ts_string(t.get("subCategory", ""))}, '
+            f'tags: {tags_ts}, roles: {roles_ts}, '
+            f'order: {t.get("order", 0)}, source: "builtin" }},'
+        )
+    return f"""/**
+ * 自动生成文件 — 请勿手动编辑
+ * 由 AiDocPlus-DocTemplates/scripts/build.py 生成
+ */
+
+export interface BuiltinDocTemplate {{
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  majorCategory: string;
+  subCategory: string;
+  tags: string[];
+  roles: string[];
+  order: number;
+  source: string;
+}}
+
+export const BUILT_IN_DOC_TEMPLATES: BuiltinDocTemplate[] = [
+{chr(10).join(entries)}
+];
+"""
+
+
 def find_ppt_themes(data_dir: str):
     themes = []
     ppt_dir = os.path.join(data_dir, "ppt-theme")
@@ -129,6 +190,15 @@ def main():
         with open(cat_output, "w", encoding="utf-8") as f:
             f.write(cat_content)
         print(f"   ✅ {len(categories)} 个分类 → doc-template-categories.generated.ts")
+
+    # 生成文档模板列表
+    doc_templates = find_doc_templates(DATA_DIR)
+    if doc_templates:
+        dt_content = generate_doc_templates_ts(doc_templates)
+        dt_output = os.path.join(DIST_DIR, "doc-templates.generated.ts")
+        with open(dt_output, "w", encoding="utf-8") as f:
+            f.write(dt_content)
+        print(f"   ✅ {len(doc_templates)} 个文档模板 → doc-templates.generated.ts")
 
     print(f"✅ 构建完成")
 
