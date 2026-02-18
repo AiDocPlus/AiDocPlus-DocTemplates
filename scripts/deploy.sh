@@ -9,7 +9,7 @@ TARGET_DIR="${PARENT_DIR}/AiDocPlus"
 DIST_DIR="${REPO_DIR}/dist"
 DATA_DIR="${REPO_DIR}/data"
 
-echo "📦 部署 AiDocPlus-DocTemplates → ${TARGET_DIR}"
+echo "[deploy] AiDocPlus-DocTemplates -> ${TARGET_DIR}"
 
 # 1. 部署 generated TypeScript 文件
 GENERATED_DIR="${TARGET_DIR}/packages/shared-types/src/generated"
@@ -18,7 +18,7 @@ mkdir -p "$GENERATED_DIR"
 for f in ppt-themes.generated.ts doc-template-categories.generated.ts doc-templates.generated.ts; do
   if [ -f "${DIST_DIR}/${f}" ]; then
     cp "${DIST_DIR}/${f}" "${GENERATED_DIR}/"
-    echo "   ✅ ${f} → generated/"
+    echo "   [ok] ${f} -> generated/"
   fi
 done
 
@@ -41,5 +41,5 @@ find "$DATA_DIR" -name "manifest.json" -not -path "*/_meta.json" | while read -r
 done
 
 TOTAL=$(find "$DATA_DIR" -name "manifest.json" -not -path "*/_meta.json" | wc -l | tr -d ' ')
-echo "   ✅ ${TOTAL} 个文档模板资源 → bundled-resources/document-templates/"
-echo "✅ AiDocPlus-DocTemplates 部署完成"
+echo "   [ok] ${TOTAL} 个文档模板资源 -> bundled-resources/document-templates/"
+echo "[done] AiDocPlus-DocTemplates 部署完成"

@@ -169,7 +169,7 @@ export const DEFAULT_DOC_TEMPLATE_CATEGORIES: DocTemplateCategory[] = [
 
 
 def main():
-    print("🔨 构建文档模板数据...")
+    print("[build] 构建文档模板数据...")
     themes = find_ppt_themes(DATA_DIR)
     categories = load_categories(DATA_DIR)
 
@@ -179,9 +179,9 @@ def main():
         output_path = os.path.join(DIST_DIR, "ppt-themes.generated.ts")
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(ts_content)
-        print(f"   ✅ {len(themes)} 个 PPT 主题 → ppt-themes.generated.ts")
+        print(f"   [ok] {len(themes)} 个 PPT 主题 -> ppt-themes.generated.ts")
     else:
-        print("   ⚠️  未找到 PPT 主题")
+        print("   [warn] 未找到 PPT 主题")
 
     # 生成文档模板分类
     if categories:
@@ -189,7 +189,7 @@ def main():
         cat_output = os.path.join(DIST_DIR, "doc-template-categories.generated.ts")
         with open(cat_output, "w", encoding="utf-8") as f:
             f.write(cat_content)
-        print(f"   ✅ {len(categories)} 个分类 → doc-template-categories.generated.ts")
+        print(f"   [ok] {len(categories)} 个分类 -> doc-template-categories.generated.ts")
 
     # 生成文档模板列表
     doc_templates = find_doc_templates(DATA_DIR)
@@ -198,9 +198,9 @@ def main():
         dt_output = os.path.join(DIST_DIR, "doc-templates.generated.ts")
         with open(dt_output, "w", encoding="utf-8") as f:
             f.write(dt_content)
-        print(f"   ✅ {len(doc_templates)} 个文档模板 → doc-templates.generated.ts")
+        print(f"   [ok] {len(doc_templates)} 个文档模板 -> doc-templates.generated.ts")
 
-    print(f"✅ 构建完成")
+    print(f"[done] 构建完成")
 
 
 if __name__ == "__main__":
