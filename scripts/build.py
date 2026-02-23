@@ -168,6 +168,71 @@ export const DEFAULT_DOC_TEMPLATE_CATEGORIES: DocTemplateCategory[] = [
 """
 
 
+def generate_json_files(data_dir: str, output_dir: str):
+    """将目录结构转换为 JSON 文件模式：每个分类一个 .json 文件
+    
+    输入: data/category/id/{manifest.json, content.json}
+    输出: output_dir/category.json
+    格式: { key, name, icon, order, templates: [{ id, name, description, content, variables, order }] }
+    """
+    categories = load_categories(data_dir)
+    if not categories:
+        print("   [warn] 未找到分类定义 (_meta.json)")
+        return 0
+
+    os.makedirs(output_dir, exist_ok=True)
+    total_templates = 0
+
+    for cat in categories:
+        cat_key = cat["key"]
+        cat_dir = os.path.join(data_dir, cat_key)
+        templates = []
+
+        if os.path.isdir(cat_dir):
+            for tmpl_name in sorted(os.listdir(cat_dir)):
+                tmpl_dir = os.path.join(cat_dir, tmpl_name)
+                manifest_path = os.path.join(tmpl_dir, "manifest.json")
+                if not os.path.isfile(manifest_path):
+                    continue
+
+                with open(manifest_path, "r", encoding="utf-8") as f:
+                    manifest = json.load(f)
+
+                # 读取 content.json（如果存在）
+                content_path = os.path.join(tmpl_dir, "content.json")
+                content_str = ""
+                if os.path.isfile(content_path):
+                    with open(content_path, "r", encoding="utf-8") as f:
+                        content_obj = json.load(f)
+                    content_str = json.dumps(content_obj, ensure_ascii=False)
+
+                templates.append({
+                    "id": manifest["id"],
+                    "name": manifest.get("name", ""),
+                    "description": manifest.get("description", ""),
+                    "content": content_str,
+                    "variables": [],
+                    "order": manifest.get("order", 0),
+                })
+
+        templates.sort(key=lambda t: t["order"])
+        total_templates += len(templates)
+
+        cat_json = {
+            "key": cat_key,
+            "name": cat["name"],
+            "icon": cat.get("icon", "📋"),
+            "order": cat.get("order", 0),
+            "templates": templates,
+        }
+
+        output_path = os.path.join(output_dir, f"{cat_key}.json")
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(cat_json, f, ensure_ascii=False, indent=2)
+
+    return total_templates
+
+
 def main():
     print("[build] 构建文档模板数据...")
     themes = find_ppt_themes(DATA_DIR)
@@ -199,6 +264,11 @@ def main():
         with open(dt_output, "w", encoding="utf-8") as f:
             f.write(dt_content)
         print(f"   [ok] {len(doc_templates)} 个文档模板 -> doc-templates.generated.ts")
+
+    # 生成 JSON 文件模式数据（供资源管理器使用）
+    json_output_dir = os.path.join(DIST_DIR, "json")
+    total = generate_json_files(DATA_DIR, json_output_dir)
+    print(f"   [ok] {total} 个模板 -> dist/json/ ({len(categories)} 个分类 JSON 文件)")
 
     print(f"[done] 构建完成")
 

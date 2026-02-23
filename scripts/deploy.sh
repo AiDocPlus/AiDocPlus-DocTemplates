@@ -22,24 +22,22 @@ for f in ppt-themes.generated.ts doc-template-categories.generated.ts doc-templa
   fi
 done
 
-# 2. 部署模板数据到 bundled-resources
+# 2. 运行 build.py 生成 JSON 文件模式数据
+echo "   [build] 运行 build.py..."
+python3 "${SCRIPT_DIR}/build.py"
+
+# 3. 部署 JSON 文件到 bundled-resources（JSON 文件模式，供资源管理器使用）
 BUNDLED_DIR="${TARGET_DIR}/apps/desktop/src-tauri/bundled-resources/document-templates"
+rm -rf "$BUNDLED_DIR"
 mkdir -p "$BUNDLED_DIR"
 
-if [ -f "${DATA_DIR}/_meta.json" ]; then
-  cp "${DATA_DIR}/_meta.json" "${BUNDLED_DIR}/"
+JSON_DIR="${DIST_DIR}/json"
+if [ -d "$JSON_DIR" ]; then
+  cp "${JSON_DIR}"/*.json "${BUNDLED_DIR}/"
+  TOTAL=$(ls -1 "${JSON_DIR}"/*.json 2>/dev/null | wc -l | tr -d ' ')
+  echo "   [ok] ${TOTAL} 个分类 JSON 文件 -> bundled-resources/document-templates/"
+else
+  echo "   [warn] dist/json/ 目录不存在，跳过部署"
 fi
 
-find "$DATA_DIR" -name "manifest.json" -not -path "*/_meta.json" | while read -r manifest_file; do
-  tmpl_dir="$(dirname "$manifest_file")"
-  rel_path="${tmpl_dir#${DATA_DIR}/}"
-  target_dir="${BUNDLED_DIR}/${rel_path}"
-  mkdir -p "$target_dir"
-  cp "${tmpl_dir}/manifest.json" "$target_dir/"
-  # 复制可选的 content.json
-  [ -f "${tmpl_dir}/content.json" ] && cp "${tmpl_dir}/content.json" "$target_dir/" || true
-done
-
-TOTAL=$(find "$DATA_DIR" -name "manifest.json" -not -path "*/_meta.json" | wc -l | tr -d ' ')
-echo "   [ok] ${TOTAL} 个文档模板资源 -> bundled-resources/document-templates/"
 echo "[done] AiDocPlus-DocTemplates 部署完成"
