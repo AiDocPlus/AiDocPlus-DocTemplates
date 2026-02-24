@@ -169,11 +169,11 @@ export const DEFAULT_DOC_TEMPLATE_CATEGORIES: DocTemplateCategory[] = [
 
 
 def generate_json_files(data_dir: str, output_dir: str):
-    """将目录结构转换为 JSON 文件模式：每个分类一个 .json 文件
+    """将目录结构转换为 JSON 文件模式：每个分类一个 .json 文件（跳过 ppt-theme）
     
     输入: data/category/id/{manifest.json, content.json}
     输出: output_dir/category.json
-    格式: { key, name, icon, order, templates: [{ id, name, description, content, variables, order }] }
+    格式: { key, name, icon, order, templates: [{ id, name, description, authorNotes, content, tags, order }] }
     """
     categories = load_categories(data_dir)
     if not categories:
@@ -185,6 +185,10 @@ def generate_json_files(data_dir: str, output_dir: str):
 
     for cat in categories:
         cat_key = cat["key"]
+        # 跳过 ppt-theme（PPT 主题不纳入文档模板 JSON 系统）
+        if cat_key == "ppt-theme":
+            continue
+
         cat_dir = os.path.join(data_dir, cat_key)
         templates = []
 
@@ -198,22 +202,39 @@ def generate_json_files(data_dir: str, output_dir: str):
                 with open(manifest_path, "r", encoding="utf-8") as f:
                     manifest = json.load(f)
 
-                # 读取 content.json（如果存在）
+                # 读取 content.json，展开所有字段
                 content_path = os.path.join(tmpl_dir, "content.json")
-                content_str = ""
+                author_notes = ""
+                content_text = ""
+                ai_generated_content = ""
+                plugin_data = None
                 if os.path.isfile(content_path):
                     with open(content_path, "r", encoding="utf-8") as f:
                         content_obj = json.load(f)
-                    content_str = json.dumps(content_obj, ensure_ascii=False)
+                    author_notes = content_obj.get("authorNotes", "")
+                    content_text = content_obj.get("content", "")
+                    ai_generated_content = content_obj.get("aiGeneratedContent", "")
+                    if "pluginData" in content_obj and content_obj["pluginData"]:
+                        plugin_data = content_obj["pluginData"]
 
-                templates.append({
+                entry = {
                     "id": manifest["id"],
                     "name": manifest.get("name", ""),
                     "description": manifest.get("description", ""),
-                    "content": content_str,
-                    "variables": [],
+                    "authorNotes": author_notes,
+                    "content": content_text,
+                    "tags": manifest.get("tags", []),
                     "order": manifest.get("order", 0),
-                })
+                    "enabledPlugins": manifest.get("enabledPlugins", []),
+                    "includeContent": manifest.get("includeContent", bool(content_text)),
+                    "includeAiContent": manifest.get("includeAiContent", bool(ai_generated_content)),
+                }
+                if ai_generated_content:
+                    entry["aiGeneratedContent"] = ai_generated_content
+                if plugin_data:
+                    entry["pluginData"] = plugin_data
+
+                templates.append(entry)
 
         templates.sort(key=lambda t: t["order"])
         total_templates += len(templates)
